@@ -623,18 +623,37 @@
         // ============================================
         // EZDANŞER ULTIMATE - QUANTUM OS v15.0
         // TÜM TUŞLAR ÇALIŞIR, LOG SİSTEMİ AKTİF
+        // KULLANICILAR ADMIN PANELİNDE GÖRÜNÜR!
         // ============================================
         
         // --- GLOBAL DEĞİŞKENLER ---
         let currentUser = null;
         let authMode = "login";
-        let db = JSON.parse(localStorage.getItem("ez_database_v15") || "[]");
-        let systemLogs = JSON.parse(localStorage.getItem("ez_logs_v15") || "[]");
+        
+        // localStorage'dan verileri her seferinde alacağız
+        let db = [];
+        let systemLogs = [];
+        
+        // Veritabanını yükleme fonksiyonu
+        function loadDatabase() {
+            db = JSON.parse(localStorage.getItem("ez_database_v15") || "[]");
+            systemLogs = JSON.parse(localStorage.getItem("ez_logs_v15") || "[]");
+        }
+        
+        // Veritabanını kaydetme fonksiyonu
+        function saveDatabase() {
+            localStorage.setItem("ez_database_v15", JSON.stringify(db));
+        }
+        
+        function saveLogs() {
+            localStorage.setItem("ez_logs_v15", JSON.stringify(systemLogs));
+        }
 
         // ============================================
         // BAŞLANGIÇ - SAYFA YÜKLENİNCE
         // ============================================
         window.onload = function() {
+            loadDatabase();
             initMatrix();
             startClocks();
             checkAutoLogin();
@@ -745,6 +764,9 @@
                 return;
             }
 
+            // Veritabanını güncelle
+            loadDatabase();
+
             // KAYIT MODU
             if(authMode === "register") {
                 if(db.find(u => u.email === email)) {
@@ -757,15 +779,19 @@
                     email: email,
                     pass: pass, 
                     nick: nick || "User_" + Math.floor(Math.random() * 999),
-                    role: "user", // Normal kullanıcı
+                    role: "user",
                     joinDate: new Date().toLocaleDateString('tr-TR'),
                     lastLogin: new Date().toLocaleString('tr-TR')
                 };
                 
                 db.push(newUser);
-                localStorage.setItem("ez_database_v15", JSON.stringify(db));
+                saveDatabase();
+                
+                // Log ekle
+                addLog("Yeni kayıt: " + email, newUser);
+                
                 pushNotification("Sistem", "Kayıt başarılı! Şimdi giriş yapabilirsiniz.");
-                toggleAuthMode(); // Giriş moduna geç
+                toggleAuthMode();
             } 
             // GİRİŞ MODU
             else {
@@ -776,7 +802,8 @@
                         nick: "Kurucu Admin", 
                         role: "admin", 
                         email: "admin@admin.com", 
-                        avatar: "K" 
+                        avatar: "K",
+                        id: "ADMIN-001"
                     };
                 } else {
                     user = db.find(u => u.email === email && u.pass === pass);
@@ -805,6 +832,7 @@
         // LOG SİSTEMİ
         // ============================================
         function addLog(action, user) {
+            loadDatabase();
             const log = {
                 user: user.nick,
                 role: user.role,
@@ -818,7 +846,7 @@
                 systemLogs = systemLogs.slice(0, 50);
             }
             
-            localStorage.setItem("ez_logs_v15", JSON.stringify(systemLogs));
+            saveLogs();
         }
 
         // ============================================
@@ -831,6 +859,7 @@
             if(session) {
                 try {
                     currentUser = JSON.parse(session);
+                    loadDatabase();
                     launchDashboard();
                 } catch(e) {
                     console.log("Oturum hatası");
@@ -860,10 +889,20 @@
                     adminSidebar.style.display = "none";
                 }
 
+                // Veritabanını güncelle
+                loadDatabase();
+
                 // Ana sayfayı yükle
                 switchTab('home');
                 pushNotification("Quantum OS", `Hoş geldin, ${currentUser.nick}. Erişim sağlandı.`);
             }, 800);
+        }
+
+        // Kullanıcı listesini yenile
+        function refreshUsers() {
+            loadDatabase();
+            switchTab('users');
+            pushNotification("Admin", "Kullanıcı listesi güncellendi");
         }
 
         // Sekme değiştir
@@ -876,6 +915,9 @@
                 document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
                 element.classList.add("active");
             }
+
+            // Veritabanını güncelle
+            loadDatabase();
 
             let html = "";
 
@@ -983,26 +1025,33 @@
             } 
             // KULLANICI YÖNETİMİ (SADECE ADMIN)
             else if(tab === 'users' && currentUser && currentUser.role === 'admin') {
+                // GÜNCEL kullanıcıları localStorage'dan TEKRAR AL
+                loadDatabase();
+                
                 let userRows = '';
                 if (db.length > 0) {
                     userRows = db.map(u => `
                         <tr>
                             <td>${u.id || 'UID-' + Math.floor(Math.random()*999)}</td>
-                            <td>${u.nick}</td>
+                            <td><strong>${u.nick}</strong></td>
                             <td>${u.email}</td>
                             <td><span class="badge badge-user">USER</span></td>
                             <td>${u.joinDate || 'Bugün'}</td>
                         </tr>
                     `).join('');
                 } else {
-                    userRows = `<tr><td colspan="5" style="text-align: center;">Henüz kayıtlı kullanıcı yok</td></tr>`;
+                    userRows = `<tr><td colspan="5" style="text-align: center; padding: 40px;">📭 Henüz kayıtlı kullanıcı yok</td></tr>`;
                 }
 
                 html = `
                     <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">KULLANICI YÖNETİMİ</h1>
                     <div class="glass-panel">
-                        <div style="margin-bottom: 20px; display: flex; justify-content: space-between;">
-                            <h3>Kayıtlı Kullanıcılar (${db.length})</h3>
+                        <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="color: var(--accent);">📊 Kayıtlı Kullanıcılar (${db.length})</h3>
+                            <div>
+                                <button class="btn-action" onclick="refreshUsers()" style="margin-right: 10px;">🔄 YENİLE</button>
+                                <button class="btn-action" onclick="pushNotification('Admin', 'Kullanıcı listesi güncel')">ℹ️ BİLGİ</button>
+                            </div>
                         </div>
                         <table class="ez-table">
                             <thead>
@@ -1023,26 +1072,27 @@
             } 
             // SİSTEM LOGLARI (SADECE ADMIN)
             else if(tab === 'logs' && currentUser && currentUser.role === 'admin') {
+                loadDatabase();
                 let logRows = '';
                 if (systemLogs.length > 0) {
                     logRows = systemLogs.map(l => `
                         <tr>
-                            <td>${l.user}</td>
+                            <td><strong>${l.user}</strong></td>
                             <td><span class="badge ${l.role === 'admin' ? 'badge-admin' : 'badge-user'}">${l.role}</span></td>
                             <td>${l.action}</td>
                             <td>${l.date}</td>
                         </tr>
                     `).join('');
                 } else {
-                    logRows = `<tr><td colspan="4" style="text-align: center;">Log kaydı bulunamadı</td></tr>`;
+                    logRows = `<tr><td colspan="4" style="text-align: center; padding: 40px;">📭 Log kaydı bulunamadı</td></tr>`;
                 }
 
                 html = `
                     <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">SİSTEM LOGLARI</h1>
                     <div class="glass-panel">
                         <div style="margin-bottom: 20px; display: flex; justify-content: space-between;">
-                            <h3>Son İşlemler (${systemLogs.length})</h3>
-                            <button class="btn-action" onclick="clearLogs()">LOG TEMİZLE</button>
+                            <h3 style="color: var(--accent);">📋 Son İşlemler (${systemLogs.length})</h3>
+                            <button class="btn-action" onclick="clearLogs()">🗑️ LOG TEMİZLE</button>
                         </div>
                         <table class="ez-table">
                             <thead>
@@ -1070,7 +1120,7 @@
         // Log temizleme (Admin)
         function clearLogs() {
             systemLogs = [];
-            localStorage.setItem("ez_logs_v15", JSON.stringify(systemLogs));
+            saveLogs();
             switchTab('logs');
             pushNotification("Sistem", "Tüm log kayıtları temizlendi");
         }
@@ -1113,9 +1163,8 @@
                 addLog("Quantum Radar indirildi", currentUser);
                 pushNotification("İndirme", "Quantum Radar Pro indiriliyor...");
                 
-                // Gerçek indirme linki
                 const link = document.createElement("a");
-                link.href = "#"; // Gerçek dosya yolu
+                link.href = "#";
                 link.download = "quantumradar-pro-v2.4.exe";
                 link.click();
             }
