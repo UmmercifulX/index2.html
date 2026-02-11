@@ -948,23 +948,22 @@
         // QUANTUM RADAR - DOĞRUDAN İNDİRME!
         // ============================================
         function downloadQuantum() {
-            if(currentUser) {
-                addLog("⚡ Quantum Radar v1.0.0 .jar indirildi", currentUser);
-                pushNotification("İndirme Başladı", "Quantum Radar v1.0.0.jar");
-                
-                // DOĞRUDAN İNDİRME LİNKİ!
-                const link = document.createElement('a');
-                link.href = "https://dosya.co/67x89vzn43ay/quantumradar-1.0.0.jar";
-                link.download = "quantumradar-1.0.0.jar";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                pushNotification("Başarılı", "Dosya indiriliyor...");
-            } else {
-                pushNotification("Hata", "Önce giriş yapmalısın!");
-            }
-        }
+    if(currentUser) {
+        addLog("⚡ Quantum Radar v1.0.0 .jar indirildi", currentUser);
+        pushNotification("İndirme Başladı", "Quantum Radar v1.0.0.jar");
+        
+        // GITHUB LİNKİ - DOSYA.CO YOK!
+        const link = document.createElement('a');
+        link.href = "https://github.com/UmmercifuIX/site.KUSURLAR/raw/main/quantumradar-1.0.0.jar";
+        link.download = "quantumradar-1.0.0.jar";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        pushNotification("Hata", "Önce giriş yapmalısın!");
+    }
+}
+        
 
         async function switchTab(tab, element = null) {
             const area = document.getElementById("content-area");
@@ -1224,3 +1223,4 @@
 
 </body>
 </html>
+
