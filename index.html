@@ -3,8 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EZDANŞER ULTIMATE | QUANTUM OS v15.0</title>
+    <title>EZDANŞER ULTIMATE | FIREBASE v1.0</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;900&family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- FIREBASE KÜTÜPHANELERİ -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
     <style>
         /* ================================================================
            EZDANŞER SUPREME DESIGN SYSTEM - v15.0
@@ -576,7 +581,7 @@
         <div class="topbar">
             <div class="brand-logo">
                 <div class="status-dot"></div>
-                EZDANŞER <span style="font-weight: 300; font-size: 0.8rem; color: white;">ULTIMATE v15.0</span>
+                EZDANŞER <span style="font-weight: 300; font-size: 0.8rem; color: white;">FIREBASE v1.0</span>
             </div>
 
             <div style="display: flex; gap: 30px; align-items: center;">
@@ -621,44 +626,94 @@
 
     <script>
         // ============================================
-        // EZDANŞER ULTIMATE - QUANTUM OS v15.0
-        // TÜM TUŞLAR ÇALIŞIR, LOG SİSTEMİ AKTİF
-        // KULLANICILAR ADMIN PANELİNDE GÖRÜNÜR!
+        // EZDANŞER ULTIMATE - FIREBASE EDITION
+        // TÜM KULLANICILAR HER YERDE ORTAK!
         // ============================================
+        
+        // --- FIREBASE CONFIG (SENİN BİLGİLERİNLE HAZIR!) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDeLMAKuprzkCT87w_kArdRw0aEQEv_KE",
+            authDomain: "ezdanser-v15.firebaseapp.com",
+            databaseURL: "https://ezdanser-v15-default-rtdb.firebaseio.com",
+            projectId: "ezdanser-v15",
+            storageBucket: "ezdanser-v15.firebasestorage.app",
+            messagingSenderId: "315185864990",
+            appId: "1:315185864990:web:4e8421a51d92caba4e90f"
+        };
+
+        // Firebase'i başlat
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
         
         // --- GLOBAL DEĞİŞKENLER ---
         let currentUser = null;
         let authMode = "login";
-        
-        // localStorage'dan verileri her seferinde alacağız
         let db = [];
         let systemLogs = [];
+
+        // ============================================
+        // FIREBASE VERİTABANI İŞLEMLERİ
+        // ============================================
         
-        // Veritabanını yükleme fonksiyonu
-        function loadDatabase() {
-            db = JSON.parse(localStorage.getItem("ez_database_v15") || "[]");
-            systemLogs = JSON.parse(localStorage.getItem("ez_logs_v15") || "[]");
+        // Kullanıcıları Firebase'den yükle
+        function loadUsers() {
+            return new Promise((resolve) => {
+                database.ref('users').once('value', (snapshot) => {
+                    const users = snapshot.val();
+                    db = [];
+                    if (users) {
+                        // Object'ten Array'e çevir
+                        Object.keys(users).forEach(key => {
+                            db.push(users[key]);
+                        });
+                    }
+                    resolve(db);
+                });
+            });
         }
         
-        // Veritabanını kaydetme fonksiyonu
-        function saveDatabase() {
-            localStorage.setItem("ez_database_v15", JSON.stringify(db));
+        // Kullanıcı ekle Firebase'e
+        function addUserToFirebase(user) {
+            return database.ref('users/' + user.id).set(user);
         }
         
-        function saveLogs() {
-            localStorage.setItem("ez_logs_v15", JSON.stringify(systemLogs));
+        // Logları Firebase'den yükle
+        function loadLogs() {
+            return new Promise((resolve) => {
+                database.ref('logs').once('value', (snapshot) => {
+                    const logs = snapshot.val();
+                    systemLogs = [];
+                    if (logs) {
+                        Object.keys(logs).forEach(key => {
+                            systemLogs.push(logs[key]);
+                        });
+                        // Tarihe göre sırala (yeni->eski)
+                        systemLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    }
+                    resolve(systemLogs);
+                });
+            });
+        }
+        
+        // Log ekle Firebase'e
+        function addLogToFirebase(log) {
+            const logId = 'log-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            return database.ref('logs/' + logId).set(log);
         }
 
         // ============================================
-        // BAŞLANGIÇ - SAYFA YÜKLENİNCE
+        // BAŞLANGIÇ
         // ============================================
-        window.onload = function() {
-            loadDatabase();
+        window.onload = async function() {
             initMatrix();
             startClocks();
+            
+            // Firebase'den verileri yükle
+            await loadUsers();
+            await loadLogs();
+            
             checkAutoLogin();
             
-            // Şifre göster checkbox'ı
             const showPassCheckbox = document.getElementById("show-password");
             if (showPassCheckbox) {
                 showPassCheckbox.addEventListener('change', function() {
@@ -713,7 +768,6 @@
         // GİRİŞ / KAYIT SİSTEMİ
         // ============================================
         
-        // Kayıt/Giriş modu değiştir
         function toggleAuthMode() {
             const regFields = document.getElementById("register-fields");
             const title = document.getElementById("auth-title");
@@ -738,34 +792,30 @@
             }
         }
 
-        // Email validasyon
         function validateEmailStrict(email) {
             const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|net|org|com\.tr|edu|gov)$/i;
             return regex.test(String(email).toLowerCase());
         }
 
-        // Giriş/Kayıt işlemini yürüt
-        function executeAuth() {
+        async function executeAuth() {
             const email = document.getElementById("auth-email").value;
             const pass = document.getElementById("auth-pass").value;
             const nick = document.getElementById("auth-nick").value;
             const error = document.getElementById("auth-error");
             const remember = document.getElementById("remember-me").checked;
 
-            // Email kontrolü
             if(!validateEmailStrict(email)) {
                 error.innerText = "HATA: Geçerli bir e-posta girin! (.com, .net, .org)";
                 return;
             }
 
-            // Şifre kontrolü
             if(pass.length < 6) {
                 error.innerText = "HATA: Şifre en az 6 karakter olmalıdır!";
                 return;
             }
 
-            // Veritabanını güncelle
-            loadDatabase();
+            // Firebase'den güncel kullanıcıları yükle
+            await loadUsers();
 
             // KAYIT MODU
             if(authMode === "register") {
@@ -775,7 +825,7 @@
                 }
                 
                 const newUser = {
-                    id: 'UID-' + Math.floor(Math.random() * 999999),
+                    id: 'UID-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
                     email: email,
                     pass: pass, 
                     nick: nick || "User_" + Math.floor(Math.random() * 999),
@@ -784,18 +834,18 @@
                     lastLogin: new Date().toLocaleString('tr-TR')
                 };
                 
+                // Firebase'e kaydet
+                await addUserToFirebase(newUser);
                 db.push(newUser);
-                saveDatabase();
                 
                 // Log ekle
-                addLog("Yeni kayıt: " + email, newUser);
+                await addLog("Yeni kayıt: " + email, newUser);
                 
                 pushNotification("Sistem", "Kayıt başarılı! Şimdi giriş yapabilirsiniz.");
                 toggleAuthMode();
             } 
             // GİRİŞ MODU
             else {
-                // Admin bypass
                 let user = null;
                 if(email === "admin@admin.com" && pass === "admin123") {
                     user = { 
@@ -812,15 +862,12 @@
                 if(user) {
                     currentUser = user;
                     
-                    // Log ekle
-                    addLog("Sisteme giriş yaptı", user);
+                    await addLog("Sisteme giriş yaptı", user);
                     
-                    // Oturum hatırla
                     if(remember) {
                         localStorage.setItem("ez_v15_session", JSON.stringify(user));
                     }
                     
-                    // Dashboard'u aç
                     launchDashboard();
                 } else {
                     error.innerText = "HATA: E-posta veya şifre hatalı!";
@@ -831,35 +878,36 @@
         // ============================================
         // LOG SİSTEMİ
         // ============================================
-        function addLog(action, user) {
-            loadDatabase();
+        async function addLog(action, user) {
             const log = {
+                id: 'log-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
                 user: user.nick,
                 role: user.role,
                 action: action,
                 date: new Date().toLocaleString('tr-TR')
             };
-            systemLogs.unshift(log);
             
-            // Sadece son 50 log'u tut
+            // Firebase'e log ekle
+            await addLogToFirebase(log);
+            
+            // Local array'i güncelle
+            systemLogs.unshift(log);
             if (systemLogs.length > 50) {
                 systemLogs = systemLogs.slice(0, 50);
             }
-            
-            saveLogs();
         }
 
         // ============================================
         // DASHBOARD İŞLEMLERİ
         // ============================================
         
-        // Otomatik giriş kontrolü
-        function checkAutoLogin() {
+        async function checkAutoLogin() {
             const session = localStorage.getItem("ez_v15_session");
             if(session) {
                 try {
                     currentUser = JSON.parse(session);
-                    loadDatabase();
+                    await loadUsers();
+                    await loadLogs();
                     launchDashboard();
                 } catch(e) {
                     console.log("Oturum hatası");
@@ -867,7 +915,6 @@
             }
         }
 
-        // Dashboard'u başlat
         function launchDashboard() {
             const authOverlay = document.getElementById("auth-overlay");
             authOverlay.style.opacity = "0";
@@ -876,12 +923,10 @@
                 authOverlay.style.display = "none";
                 document.getElementById("main-dashboard").style.display = "flex";
                 
-                // Kullanıcı bilgilerini güncelle
                 document.getElementById("top-user-name").innerText = currentUser.nick;
                 document.getElementById("top-user-role").innerText = currentUser.role === "admin" ? "SUPREME ADMIN" : "AUTHORIZED MEMBER";
                 document.getElementById("top-avatar").innerText = currentUser.nick.charAt(0).toUpperCase();
 
-                // Admin menüsünü göster
                 const adminSidebar = document.getElementById("admin-sidebar");
                 if(currentUser.role === "admin") {
                     adminSidebar.style.display = "block";
@@ -889,39 +934,32 @@
                     adminSidebar.style.display = "none";
                 }
 
-                // Veritabanını güncelle
-                loadDatabase();
-
-                // Ana sayfayı yükle
                 switchTab('home');
                 pushNotification("Quantum OS", `Hoş geldin, ${currentUser.nick}. Erişim sağlandı.`);
             }, 800);
         }
 
-        // Kullanıcı listesini yenile
-        function refreshUsers() {
-            loadDatabase();
+        async function refreshUsers() {
+            await loadUsers();
             switchTab('users');
-            pushNotification("Admin", "Kullanıcı listesi güncellendi");
+            pushNotification("Admin", `Kullanıcı listesi güncellendi (${db.length} kullanıcı)`);
         }
 
-        // Sekme değiştir
-        function switchTab(tab, element = null) {
+        async function switchTab(tab, element = null) {
             const area = document.getElementById("content-area");
             if (!area) return;
 
-            // Aktif sınıfını güncelle
             if(element) {
                 document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
                 element.classList.add("active");
             }
 
-            // Veritabanını güncelle
-            loadDatabase();
+            // Firebase'den güncel verileri al
+            await loadUsers();
+            await loadLogs();
 
             let html = "";
 
-            // ANA SAYFA
             if(tab === 'home') {
                 html = `
                     <h1 style="font-family: 'Orbitron'; margin-bottom: 30px; letter-spacing: 2px;">SİSTEM ÖZETİ</h1>
@@ -929,7 +967,7 @@
                         <div class="stat-card">
                             <h3>Toplam Üye</h3>
                             <div class="value">${db.length + 1}</div>
-                            <div class="trend up">▲ Son 24 saat</div>
+                            <div class="trend up">▲ Firebase Aktif</div>
                         </div>
                         <div class="stat-card">
                             <h3>Sunucu Yükü</h3>
@@ -953,16 +991,16 @@
                                     <b>[ADMİN PANEL]</b><br>
                                     • Toplam kayıtlı kullanıcı: ${db.length}<br>
                                     • Toplam log kaydı: ${systemLogs.length}<br>
-                                    • Sistem çekirdeği v15.0 aktif
+                                    • Firebase veritabanı AKTİF<br>
+                                    • Tüm kullanıcılar HER YERDEN görünür!
                                 </p>` : 
-                                `<p>Sistem şu an stabil. Tüm modüller aktif durumda.</p>
-                                 <p style="margin-top: 10px;">Yazılım havuzundan gerekli dosyaları indirebilirsiniz.</p>`
+                                `<p>Sistem şu an stabil. Firebase veritabanı aktif.</p>
+                                 <p style="margin-top: 10px;">Tüm kayıtlar bulut sunucusunda tutuluyor.</p>`
                             }
                         </div>
                     </div>
                 `;
             } 
-            // YAZILIM HAVUZU
             else if(tab === 'software') {
                 html = `
                     <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">YAZILIM HAVUZU</h1>
@@ -983,18 +1021,11 @@
                                     <td><span class="badge" style="background:var(--success); color:black;">GÜNCEL</span></td>
                                     <td><button class="btn-action" onclick="downloadQuantum()">İNDİR</button></td>
                                 </tr>
-                                <tr>
-                                    <td><b>🔍 Network Scanner</b></td>
-                                    <td>v1.8</td>
-                                    <td><span class="badge" style="background:var(--warning); color:black;">BETA</span></td>
-                                    <td><button class="btn-action" onclick="pushNotification('Yakında', 'Bu yazılım hazırlanıyor')">YAKINDA</button></td>
-                                </tr>
                             </tbody>
                         </table>
                     </div>
                 `;
             } 
-            // PROFİL AYARLARI
             else if(tab === 'settings' && currentUser) {
                 html = `
                     <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">PROFİL AYARLARI</h1>
@@ -1023,11 +1054,7 @@
                     </div>
                 `;
             } 
-            // KULLANICI YÖNETİMİ (SADECE ADMIN)
             else if(tab === 'users' && currentUser && currentUser.role === 'admin') {
-                // GÜNCEL kullanıcıları localStorage'dan TEKRAR AL
-                loadDatabase();
-                
                 let userRows = '';
                 if (db.length > 0) {
                     userRows = db.map(u => `
@@ -1050,7 +1077,7 @@
                             <h3 style="color: var(--accent);">📊 Kayıtlı Kullanıcılar (${db.length})</h3>
                             <div>
                                 <button class="btn-action" onclick="refreshUsers()" style="margin-right: 10px;">🔄 YENİLE</button>
-                                <button class="btn-action" onclick="pushNotification('Admin', 'Kullanıcı listesi güncel')">ℹ️ BİLGİ</button>
+                                <button class="btn-action" onclick="pushNotification('Firebase', 'Veritabanı bağlantısı aktif')">☁️ FIREBASE</button>
                             </div>
                         </div>
                         <table class="ez-table">
@@ -1067,12 +1094,13 @@
                                 ${userRows}
                             </tbody>
                         </table>
+                        <p style="color: var(--success); margin-top: 20px; text-align: center;">
+                            ✅ Tüm kullanıcılar Firebase bulut sunucusunda saklanıyor!
+                        </p>
                     </div>
                 `;
             } 
-            // SİSTEM LOGLARI (SADECE ADMIN)
             else if(tab === 'logs' && currentUser && currentUser.role === 'admin') {
-                loadDatabase();
                 let logRows = '';
                 if (systemLogs.length > 0) {
                     logRows = systemLogs.map(l => `
@@ -1111,16 +1139,15 @@
                 `;
             }
 
-            // HTML'i yükle
             if (html) {
                 area.innerHTML = html;
             }
         }
 
-        // Log temizleme (Admin)
-        function clearLogs() {
+        async function clearLogs() {
+            // Firebase'de logları temizle
+            await database.ref('logs').remove();
             systemLogs = [];
-            saveLogs();
             switchTab('logs');
             pushNotification("Sistem", "Tüm log kayıtları temizlendi");
         }
@@ -1147,9 +1174,9 @@
         // ============================================
         // ÇIKIŞ YAP
         // ============================================
-        function systemLogout() {
+        async function systemLogout() {
             if (currentUser) {
-                addLog("Sistemden çıkış yaptı", currentUser);
+                await addLog("Sistemden çıkış yaptı", currentUser);
             }
             localStorage.removeItem("ez_v15_session");
             location.reload();
@@ -1170,9 +1197,6 @@
             }
         }
 
-        // ============================================
-        // PENCERE BOYUT DEĞİŞİNCE MATRİX'İ GÜNCELLE
-        // ============================================
         window.addEventListener('resize', function() {
             const canvas = document.getElementById("matrix-canvas");
             if (canvas) {
