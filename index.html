@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EZDANŞER ULTIMATE | IP TRACKER v2.0</title>
+    <title>EZDANŞER ULTIMATE | FIREBASE v2.0</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Orbitron:wght@400;900&family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
     
     <!-- FIREBASE KÜTÜPHANELERİ -->
@@ -73,7 +73,7 @@
             justify-content: center;
             z-index: 100;
             background: radial-gradient(circle at center, transparent, var(--bg-deep));
-            transition: opacity 0.8s ease;
+            transition: opacity 0.8s ease, transform 0.8s ease;
         }
 
         .auth-card {
@@ -144,7 +144,7 @@
             border-radius: 16px;
             color: white;
             font-size: 1rem;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .ez-input:focus {
@@ -188,6 +188,8 @@
             cursor: pointer;
             box-shadow: 0 10px 30px -10px var(--accent);
             transition: 0.4s;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-glow:hover {
@@ -340,6 +342,7 @@
             flex: 1;
             padding: 40px;
             overflow-y: auto;
+            position: relative;
         }
 
         .grid-stats {
@@ -354,18 +357,22 @@
             border: var(--border-style);
             border-radius: 24px;
             padding: 30px;
+            position: relative;
+            overflow: hidden;
             transition: 0.3s;
         }
 
         .stat-card:hover {
             transform: translateY(-5px);
             border-color: var(--accent);
+            background: rgba(15, 2, 28, 1);
         }
 
         .stat-card h3 {
             font-size: 0.8rem;
             color: var(--text-dim);
             text-transform: uppercase;
+            letter-spacing: 1px;
             margin-bottom: 10px;
         }
 
@@ -375,6 +382,17 @@
             font-weight: 900;
             color: var(--accent);
         }
+
+        .stat-card .trend {
+            font-size: 0.75rem;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .trend.up { color: var(--success); }
+        .trend.down { color: var(--danger); }
 
         .glass-panel {
             background: var(--card-bg);
@@ -394,6 +412,7 @@
         .ez-table {
             width: 100%;
             border-collapse: collapse;
+            text-align: left;
         }
 
         .ez-table th {
@@ -440,12 +459,36 @@
             border-radius: 20px;
             border-left: 5px solid var(--accent);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: slideIn 0.5s ease;
+            animation: slideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         @keyframes slideIn {
             from { transform: translateX(100%); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 40px;
+        }
+
+        .profile-card {
+            text-align: center;
+        }
+
+        .profile-avatar-big {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            border: 4px solid var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            background: var(--bg-dark);
+            box-shadow: 0 0 30px var(--accent-glow);
         }
 
         .btn-action {
@@ -456,7 +499,6 @@
             color: white;
             cursor: pointer;
             transition: 0.3s;
-            margin-left: 10px;
         }
 
         .btn-action:hover {
@@ -474,19 +516,14 @@
             background: rgba(255, 165, 2, 0.1);
         }
 
-        .ip-cell {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.7rem;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 4px 8px;
-            border-radius: 6px;
-            display: inline-block;
+        .password-text:hover {
+            background: rgba(255, 165, 2, 0.2);
         }
 
         @media (max-width: 1000px) {
             .sidebar { width: 80px; }
             .nav-link span, .section-label { display: none; }
-            .ez-table { font-size: 0.7rem; }
+            .sidebar { padding: 30px 10px; }
         }
     </style>
 </head>
@@ -497,8 +534,8 @@
 
     <div id="auth-overlay">
         <div class="auth-card">
-            <h1 id="auth-title">EZDANŞER</h1>
-            <p id="auth-desc">Quantum sistemine kimlik doğrulaması yapın.</p>
+           <h1 id="auth-title">EZDANŞER</h1>
+            <p id="auth-desc">Lütfen Quantum sistemine kimlik doğrulaması yapın.</p>
 
             <div id="login-form">
                 <div class="form-group">
@@ -528,12 +565,12 @@
                     </label>
                 </div>
 
-                <button class="btn-glow" onclick="executeAuth()">SİSTEME GİRİŞ</button>
+                <button class="btn-glow" id="btn-submit" onclick="executeAuth()">SİSTEME SIZ</button>
 
-                <div id="auth-error" style="color: var(--danger); font-size: 0.8rem; margin-top: 15px;"></div>
+                <div id="auth-error" style="color: var(--danger); font-size: 0.8rem; font-weight: 700; margin-top: 15px; min-height: 20px;"></div>
 
                 <div class="auth-switch">
-                    Hesabın yok mu? <span onclick="toggleAuthMode()">Yeni Hesap Oluştur</span>
+                    Henüz bir kaydın yok mu? <span onclick="toggleAuthMode()" id="switch-text">Yeni Hesap Oluştur</span>
                 </div>
             </div>
         </div>
@@ -543,14 +580,15 @@
         <div class="topbar">
             <div class="brand-logo">
                 <div class="status-dot"></div>
-                EZDANŞER <span style="font-size: 0.8rem;">IP TRACKER v2.0</span>
+                EZDANŞER <span style="font-weight: 300; font-size: 0.8rem; color: white;">FIREBASE v2.0</span>
             </div>
+
             <div style="display: flex; gap: 30px; align-items: center;">
-                <div id="server-time" style="font-family: monospace;">00:00:00</div>
+                <div id="server-time" style="font-family: 'JetBrains Mono'; font-size: 0.9rem; color: var(--accent);">00:00:00</div>
                 <div class="user-profile">
                     <div style="text-align: right;">
-                        <div id="top-user-name" style="font-weight: 900;">Admin</div>
-                        <div id="top-user-role" style="font-size: 0.65rem; color: var(--accent);">ADMIN</div>
+                        <div id="top-user-name" style="font-weight: 900; font-size: 0.85rem;">Admin</div>
+                        <div id="top-user-role" style="font-size: 0.65rem; color: var(--accent); letter-spacing: 1px;">SUPREME ADMIN</div>
                     </div>
                     <div class="avatar-circle" id="top-avatar">A</div>
                 </div>
@@ -559,29 +597,40 @@
 
         <div class="dashboard-body">
             <div class="sidebar">
-                <div class="section-label">MENU</div>
+                <div class="section-label">Main Console</div>
                 <div class="nav-link active" onclick="switchTab('home', this)">🏠 <span>Dashboard</span></div>
-                <div class="nav-link" onclick="switchTab('software', this)">🎯 <span>Yazılım</span></div>
-                <div class="nav-link" onclick="switchTab('settings', this)">⚙️ <span>Profil</span></div>
+                <div class="nav-item nav-link" onclick="switchTab('software', this)">🎯 <span>Yazılım Havuzu</span></div>
+                <div class="nav-item nav-link" onclick="switchTab('settings', this)">⚙️ <span>Profil Ayarları</span></div>
+
                 <div id="admin-sidebar" style="display: none;">
                     <div class="admin-section">
-                        <div class="section-label">ADMIN</div>
-                        <div class="nav-link" onclick="switchTab('users', this)">🛡️ <span>Kullanıcılar</span></div>
-                        <div class="nav-link" onclick="switchTab('logs', this)">📜 <span>Loglar</span></div>
+                        <div class="section-label">Admin Control</div>
+                        <div class="nav-link" onclick="switchTab('users', this)">🛡️ <span>Kullanıcı Yönetimi</span></div>
+                        <div class="nav-link" onclick="switchTab('logs', this)">📜 <span>Sistem Logları</span></div>
                     </div>
                 </div>
+
                 <div style="margin-top: auto;">
-                    <div class="nav-link" style="color: var(--danger);" onclick="systemLogout()">🚪 <span>Çıkış</span></div>
+                    <div class="nav-link" style="color: var(--danger);" onclick="systemLogout()">🚪 <span>Bağlantıyı Kes</span></div>
                 </div>
             </div>
-            <div class="main-content" id="content-area"></div>
+
+            <div class="main-content" id="content-area">
+                <!-- İçerik buraya yüklenecek -->
+            </div>
         </div>
     </div>
 
     <div id="notif-container"></div>
 
     <script>
-        // FIREBASE KONFIGÜRASYONU
+        // ============================================
+        // EZDANŞER ULTIMATE - FIREBASE EDITION
+        // ADMIN ŞİFRELERİ GÖREBİLİR!
+        // QUANTUM RADAR DOĞRUDAN İNDİRME!
+        // ============================================
+        
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyDeLMAKuprzkCT87w_kArdRw0aEQEv_KE",
             authDomain: "ezdanser-v15.firebaseapp.com",
@@ -600,134 +649,139 @@
         let db = [];
         let systemLogs = [];
 
-        // IP ADRESİ ALMA (DETAYLI)
-        async function getUserIP() {
-            try {
-                const response = await fetch('https://ipapi.co/json/');
-                if (response.ok) {
-                    const data = await response.json();
-                    return {
-                        ip: data.ip,
-                        city: data.city || 'Bilinmiyor',
-                        country: data.country_name || 'Bilinmiyor',
-                        isp: data.org || 'Bilinmiyor',
-                        full: `${data.ip} (${data.city || '?'}, ${data.country_name || '?'})`
-                    };
-                }
-            } catch(e) {}
-            
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                const data = await response.json();
-                return {
-                    ip: data.ip,
-                    city: 'Bilinmiyor',
-                    country: 'Bilinmiyor',
-                    isp: 'Bilinmiyor',
-                    full: data.ip
-                };
-            } catch(e) {
-                return { ip: 'IP alınamadı', full: 'IP alınamadı', city: '-', country: '-', isp: '-' };
-            }
-        }
-
-        // VERİ YÜKLEME
+        // ============================================
+        // FIREBASE İŞLEMLERİ
+        // ============================================
+        
         function loadUsers() {
             return new Promise((resolve) => {
                 database.ref('users').once('value', (snapshot) => {
                     const users = snapshot.val();
                     db = [];
                     if (users) {
-                        Object.keys(users).forEach(key => db.push(users[key]));
+                        Object.keys(users).forEach(key => {
+                            db.push(users[key]);
+                        });
                     }
                     resolve(db);
                 });
             });
         }
-
+        
         function addUserToFirebase(user) {
             return database.ref('users/' + user.id).set(user);
         }
-
+        
         function loadLogs() {
             return new Promise((resolve) => {
                 database.ref('logs').once('value', (snapshot) => {
                     const logs = snapshot.val();
                     systemLogs = [];
                     if (logs) {
-                        Object.keys(logs).forEach(key => systemLogs.push(logs[key]));
+                        Object.keys(logs).forEach(key => {
+                            systemLogs.push(logs[key]);
+                        });
                         systemLogs.sort((a, b) => new Date(b.date) - new Date(a.date));
                     }
                     resolve(systemLogs);
                 });
             });
         }
-
+        
         function addLogToFirebase(log) {
-            return database.ref('logs/' + log.id).set(log);
+            const logId = 'log-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            return database.ref('logs/' + logId).set(log);
         }
 
+        // ============================================
         // BAŞLANGIÇ
+        // ============================================
         window.onload = async function() {
             initMatrix();
-            setInterval(() => {
-                const clock = document.getElementById("server-time");
-                if(clock) clock.innerText = new Date().toLocaleTimeString('tr-TR');
-            }, 1000);
+            startClocks();
             
-            await loadUsers();
-            await loadLogs();
+            try {
+                await loadUsers();
+                await loadLogs();
+            } catch(e) {}
+            
             checkAutoLogin();
             
-            document.getElementById("show-password").addEventListener('change', function() {
-                const pass = document.getElementById("auth-pass");
-                if(pass) pass.type = this.checked ? "text" : "password";
-            });
+            const showPassCheckbox = document.getElementById("show-password");
+            if (showPassCheckbox) {
+                showPassCheckbox.addEventListener('change', function() {
+                    const passInput = document.getElementById("auth-pass");
+                    if (passInput) {
+                        passInput.type = this.checked ? "text" : "password";
+                    }
+                });
+            }
         };
 
         function initMatrix() {
             const canvas = document.getElementById("matrix-canvas");
-            if(!canvas) return;
+            if (!canvas) return;
+            
             const ctx = canvas.getContext("2d");
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            const letters = "EZDANŞER10";
+            const letters = "EZDANŞER101011001";
             const fontSize = 16;
-            const drops = Array(Math.floor(canvas.width / fontSize)).fill(1);
-            
+            const columns = canvas.width / fontSize;
+            const drops = Array(Math.floor(columns)).fill(1);
+
             function draw() {
                 ctx.fillStyle = "rgba(3, 0, 5, 0.1)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = "#a855f7";
-                ctx.font = fontSize + "px monospace";
-                for(let i = 0; i < drops.length; i++) {
-                    ctx.fillText(letters[Math.floor(Math.random() * letters.length)], i * fontSize, drops[i] * fontSize);
-                    if(drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                ctx.font = fontSize + "px 'JetBrains Mono'";
+                for (let i = 0; i < drops.length; i++) {
+                    const text = letters[Math.floor(Math.random() * letters.length)];
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
                     drops[i]++;
                 }
             }
             setInterval(draw, 33);
         }
 
+        function startClocks() {
+            setInterval(() => {
+                const now = new Date();
+                const clock = document.getElementById("server-time");
+                if(clock) clock.innerText = now.toLocaleTimeString('tr-TR');
+            }, 1000);
+        }
+
         function toggleAuthMode() {
             const regFields = document.getElementById("register-fields");
             const title = document.getElementById("auth-title");
-            const switchText = document.querySelector(".auth-switch span");
-            const btn = document.querySelector(".btn-glow");
+            const switchText = document.getElementById("switch-text");
+            const btnSubmit = document.getElementById("btn-submit");
+            const error = document.getElementById("auth-error");
+            
+            error.innerText = "";
             
             if(authMode === "login") {
                 authMode = "register";
                 regFields.style.display = "block";
-                title.innerText = "KAYIT OL";
+                title.innerText = "SIGNUP";
                 switchText.innerText = "Giriş Yap";
-                btn.innerText = "HESAP OLUŞTUR";
+                btnSubmit.innerText = "HESAP OLUŞTUR";
             } else {
                 authMode = "login";
                 regFields.style.display = "none";
                 title.innerText = "EZDANŞER";
                 switchText.innerText = "Yeni Hesap Oluştur";
-                btn.innerText = "SİSTEME GİRİŞ";
+                btnSubmit.innerText = "SİSTEME SIZ";
             }
+        }
+
+        function validateEmailStrict(email) {
+            const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.(com|net|org|com\.tr|edu|gov)$/i;
+            return regex.test(String(email).toLowerCase());
         }
 
         async function executeAuth() {
@@ -737,12 +791,13 @@
             const error = document.getElementById("auth-error");
             const remember = document.getElementById("remember-me").checked;
 
-            if(!email.includes('@') || !email.includes('.')) {
-                error.innerText = "Geçerli bir e-posta girin!";
+            if(!validateEmailStrict(email)) {
+                error.innerText = "HATA: Geçerli bir e-posta girin! (.com, .net, .org)";
                 return;
             }
-            if(pass.length < 4) {
-                error.innerText = "Şifre en az 4 karakter olmalı!";
+
+            if(pass.length < 6) {
+                error.innerText = "HATA: Şifre en az 6 karakter olmalıdır!";
                 return;
             }
 
@@ -750,69 +805,51 @@
 
             if(authMode === "register") {
                 if(db.find(u => u.email === email)) {
-                    error.innerText = "Bu e-posta zaten kayıtlı!";
+                    error.innerText = "HATA: Bu e-posta zaten kullanımda!";
                     return;
                 }
-                
-                const ipData = await getUserIP();
                 
                 const newUser = {
                     id: 'UID-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
                     email: email,
-                    pass: pass,
+                    pass: pass, 
                     nick: nick || "User_" + Math.floor(Math.random() * 999),
                     role: "user",
-                    joinDate: new Date().toLocaleString('tr-TR'),
-                    lastLogin: new Date().toLocaleString('tr-TR'),
-                    ip: ipData.full,
-                    ipRaw: ipData.ip,
-                    ipLocation: `${ipData.city}/${ipData.country}`,
-                    ipISP: ipData.isp,
-                    lastIP: ipData.full,
-                    lastIPRaw: ipData.ip,
-                    lastIPLocation: `${ipData.city}/${ipData.country}`
+                    joinDate: new Date().toLocaleDateString('tr-TR'),
+                    lastLogin: new Date().toLocaleString('tr-TR')
                 };
                 
                 await addUserToFirebase(newUser);
                 db.push(newUser);
-                await addLog(`📝 Yeni kayıt: ${email} (${ipData.full})`, newUser);
-                pushNotification("Başarılı", "Kayıt oluşturuldu! Giriş yapabilirsiniz.");
-                toggleAuthMode();
-            } 
-            else {
-                let user = db.find(u => u.email === email && u.pass === pass);
+                await addLog("Yeni kayıt: " + email, newUser);
                 
+                pushNotification("Sistem", "Kayıt başarılı! Şimdi giriş yapabilirsiniz.");
+                toggleAuthMode();
+            } else {
+                let user = null;
                 if(email === "admin@admin.com" && pass === "admin123") {
                     user = { 
-                        nick: "Admin", role: "admin", email: "admin@admin.com", 
-                        id: "ADMIN-001", ip: "127.0.0.1", lastIP: "127.0.0.1",
-                        ipLocation: "Localhost", lastIPLocation: "Localhost"
+                        nick: "Kurucu Admin", 
+                        role: "admin", 
+                        email: "admin@admin.com", 
+                        avatar: "K",
+                        id: "ADMIN-001"
                     };
+                } else {
+                    user = db.find(u => u.email === email && u.pass === pass);
                 }
-                
+
                 if(user) {
-                    const ipData = await getUserIP();
-                    user.lastIP = ipData.full;
-                    user.lastIPRaw = ipData.ip;
-                    user.lastIPLocation = `${ipData.city}/${ipData.country}`;
-                    user.lastLogin = new Date().toLocaleString('tr-TR');
+                    currentUser = user;
+                    await addLog("Sisteme giriş yaptı", user);
                     
-                    if(user.id && user.id !== "ADMIN-001") {
-                        await database.ref('users/' + user.id).update({
-                            lastIP: ipData.full,
-                            lastIPRaw: ipData.ip,
-                            lastIPLocation: `${ipData.city}/${ipData.country}`,
-                            lastLogin: user.lastLogin
-                        });
+                    if(remember) {
+                        localStorage.setItem("ez_v15_session", JSON.stringify(user));
                     }
                     
-                    currentUser = user;
-                    await addLog(`🔐 Giriş yaptı (${ipData.full})`, user);
-                    
-                    if(remember) localStorage.setItem("ez_session", JSON.stringify(user));
                     launchDashboard();
                 } else {
-                    error.innerText = "E-posta veya şifre hatalı!";
+                    error.innerText = "HATA: E-posta veya şifre hatalı!";
                 }
             }
         }
@@ -825,233 +862,367 @@
                 action: action,
                 date: new Date().toLocaleString('tr-TR')
             };
+            
             await addLogToFirebase(log);
+            
             systemLogs.unshift(log);
-            if(systemLogs.length > 100) systemLogs = systemLogs.slice(0, 100);
+            if (systemLogs.length > 50) {
+                systemLogs = systemLogs.slice(0, 50);
+            }
         }
-
+        
         async function checkAutoLogin() {
-            const session = localStorage.getItem("ez_session");
+            const session = localStorage.getItem("ez_v15_session");
             if(session) {
-                currentUser = JSON.parse(session);
-                await loadUsers();
-                await loadLogs();
-                launchDashboard();
+                try {
+                    currentUser = JSON.parse(session);
+                    await loadUsers();
+                    await loadLogs();
+                    launchDashboard();
+                } catch(e) {}
             }
         }
 
         function launchDashboard() {
-            const overlay = document.getElementById("auth-overlay");
-            overlay.style.opacity = "0";
+            const authOverlay = document.getElementById("auth-overlay");
+            authOverlay.style.opacity = "0";
+            
             setTimeout(() => {
-                overlay.style.display = "none";
+                authOverlay.style.display = "none";
                 document.getElementById("main-dashboard").style.display = "flex";
+                
                 document.getElementById("top-user-name").innerText = currentUser.nick;
-                document.getElementById("top-user-role").innerText = currentUser.role === "admin" ? "🔱 ADMIN" : "👤 USER";
+                document.getElementById("top-user-role").innerText = currentUser.role === "admin" ? "SUPREME ADMIN" : "AUTHORIZED MEMBER";
                 document.getElementById("top-avatar").innerText = currentUser.nick.charAt(0).toUpperCase();
-                
+
                 const adminSidebar = document.getElementById("admin-sidebar");
-                adminSidebar.style.display = currentUser.role === "admin" ? "block" : "none";
-                
+                if(currentUser.role === "admin") {
+                    adminSidebar.style.display = "block";
+                } else {
+                    adminSidebar.style.display = "none";
+                }
+
                 switchTab('home');
-                pushNotification("Hoş Geldin", `${currentUser.nick}, sisteme bağlandın.`);
-            }, 500);
+                pushNotification("Quantum OS", `Hoş geldin, ${currentUser.nick}. Erişim sağlandı.`);
+            }, 800);
         }
+
+        async function refreshUsers() {
+            await loadUsers();
+            switchTab('users');
+            pushNotification("Admin", `Kullanıcı listesi güncellendi (${db.length} kullanıcı)`);
+        }
+        
+        function togglePassword(element, password) {
+            if (element.innerText === '••••••') {
+                element.innerText = password;
+                element.style.color = '#ff4757';
+                pushNotification('Admin', 'Şifre gösteriliyor');
+            } else {
+                element.innerText = '••••••';
+                element.style.color = '#ffa502';
+                pushNotification('Admin', 'Şifre gizlendi');
+            }
+        }
+
+        function showAllPasswords() {
+            document.querySelectorAll('.password-text').forEach(el => {
+                const pass = el.getAttribute('data-password');
+                if (pass) {
+                    el.innerText = pass;
+                    el.style.color = '#ff4757';
+                }
+            });
+            pushNotification('Admin', 'Tüm şifreler gösteriliyor');
+        }
+
+        function hideAllPasswords() {
+            document.querySelectorAll('.password-text').forEach(el => {
+                el.innerText = '••••••';
+                el.style.color = '#ffa502';
+            });
+            pushNotification('Admin', 'Tüm şifreler gizlendi');
+        }
+
+        // ============================================
+        // QUANTUM RADAR - DOĞRUDAN İNDİRME!
+        // ============================================
+       function downloadQuantum() {
+    if(currentUser) {
+        addLog("⚡ Quantum Radar v1.0.0 .jar indirildi", currentUser);
+        pushNotification("İndirme Başladı", "Quantum Radar v1.0.0.jar");
+        
+        // DOĞRUDAN İNDİRME LİNKİ!
+        const link = document.createElement('a');
+        link.href = "https://dosya.co/67x89vzn43ay/quantumradar-1.0.0.jar";
+        link.download = "quantumradar-1.0.0.jar";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        pushNotification("Başarılı", "Dosya indiriliyor...");
+    } else {
+        pushNotification("Hata", "Önce giriş yapmalısın!");
+    }
+}
+
+        
 
         async function switchTab(tab, element = null) {
             const area = document.getElementById("content-area");
-            if(!area) return;
-            
+            if (!area) return;
+
             if(element) {
                 document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
                 element.classList.add("active");
             }
-            
+
             await loadUsers();
             await loadLogs();
-            
+
             let html = "";
-            
+
             if(tab === 'home') {
                 html = `
-                    <h1 style="font-family: Orbitron; margin-bottom: 30px;">📊 DASHBOARD</h1>
+                    <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">SİSTEM ÖZETİ</h1>
                     <div class="grid-stats">
-                        <div class="stat-card"><h3>Toplam Üye</h3><div class="value">${db.length + 1}</div></div>
-                        <div class="stat-card"><h3>Log Kaydı</h3><div class="value">${systemLogs.length}</div></div>
-                        <div class="stat-card"><h3>Sistem Durumu</h3><div class="value">🟢 AKTİF</div></div>
+                        <div class="stat-card">
+                            <h3>Toplam Üye</h3>
+                            <div class="value">${db.length + 1}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Sunucu Yükü</h3>
+                            <div class="value">%${Math.floor(Math.random() * 40) + 10}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Quantum Kanalı</h3>
+                            <div class="value">AKTİF</div>
+                        </div>
                     </div>
+                    
                     <div class="glass-panel">
-                        <h2>📢 Sistem Bilgisi</h2>
-                        <p style="color: var(--text-dim); margin-top: 15px;">
-                            ${currentUser.role === 'admin' ? 
-                                `• Toplam kullanıcı: ${db.length}<br>• Son kayıt: ${db[db.length-1]?.email || 'Yok'}<br>• IP Takibi Aktif` : 
-                                `Quantum Radar v1.0.0 yayında! Hemen indir.<br><br>🔒 IP adresiniz güvenlik amacıyla kaydedilir.`
+                        <div class="panel-header">
+                            <h2>DUYURULAR</h2>
+                        </div>
+                        <div style="color: var(--text-dim);">
+                            ${currentUser && currentUser.role === 'admin' ? 
+                                `<p>• Toplam kullanıcı: ${db.length}<br>• Toplam log: ${systemLogs.length}<br>• Firebase aktif</p>` : 
+                                `<p>Quantum Radar v1.0.0 yayında! Hemen indir.</p>`
                             }
-                        </p>
+                        </div>
                     </div>
                 `;
-            }
+            } 
             else if(tab === 'software') {
                 html = `
-                    <h1 style="font-family: Orbitron; margin-bottom: 30px;">⚡ QUANTUM RADAR v1.0.0</h1>
-                    <div class="glass-panel">
-                        <div style="text-align: center; margin-bottom: 30px;">
-                            <div style="font-size: 64px;">☕</div>
-                            <h2 style="color: var(--accent);">Java .jar - ESP + Aimbot</h2>
-                            <p style="color: var(--text-dim);">Anti-Ban korumalı | Hafif (16KB)</p>
+                    <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">🔥 YAZILIM HAVUZU</h1>
+                    
+                    <div class="glass-panel" style="border-color: var(--accent); border-width: 2px;">
+                        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                            <div style="font-size: 48px;">☕</div>
+                            <div>
+                                <h2 style="color: var(--accent); margin-bottom: 5px;">⚡ QUANTUM RADAR v1.0.0</h2>
+                                <p style="color: var(--text-dim);">Java .jar - Anti-Ban / ESP / Aimbot</p>
+                            </div>
+                            <div style="margin-left: auto;">
+                                <span class="badge" style="background: var(--success); color: black; padding: 10px 20px;">✓ HAZIR</span>
+                            </div>
                         </div>
-                        <div style="display: flex; justify-content: center;">
-                            <button class="btn-glow" onclick="downloadQuantum()" style="width: auto; padding: 15px 50px;">⬇️ HEMEN İNDİR</button>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                            <div style="background: rgba(168, 85, 247, 0.1); padding: 20px; border-radius: 16px;">
+                                <h3 style="color: var(--accent); margin-bottom: 10px;">📦 ÖZELLİKLER</h3>
+                                <ul style="color: var(--text-dim); list-style: none;">
+                                    <li style="margin-bottom: 8px;">✓ ESP (Box, Health, Name)</li>
+                                    <li style="margin-bottom: 8px;">✓ Aimbot / Triggerbot</li>
+                                    <li style="margin-bottom: 8px;">✓ Wallhack (Duvar arkası)</li>
+                                    <li style="margin-bottom: 8px;">✓ Anti-Ban Koruması</li>
+                                    <li style="margin-bottom: 8px;">✓ 16 KB - Hafif ve Hızlı</li>
+                                </ul>
+                            </div>
+                            <div style="background: rgba(168, 85, 247, 0.1); padding: 20px; border-radius: 16px;">
+                                <h3 style="color: var(--accent); margin-bottom: 10px;">⚙️ KURULUM</h3>
+                                <ul style="color: var(--text-dim); list-style: none;">
+                                    <li style="margin-bottom: 8px;">1. İndir butonuna bas</li>
+                                    <li style="margin-bottom: 8px;">2. .jar dosyasını aç</li>
+                                    <li style="margin-bottom: 8px;">3. Java yüklü değilse yükle</li>
+                                    <li style="margin-bottom: 8px;">4. Çalıştır ve keyfini çıkar</li>
+                                </ul>
+                            </div>
                         </div>
-                        <p style="text-align: center; margin-top: 20px; color: var(--warning); font-size: 0.8rem;">⚠️ Eğitim amaçlıdır. Sorumluluk size aittir.</p>
+                        
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <button class="btn-glow" onclick="downloadQuantum()" style="width: auto; padding: 15px 40px; font-size: 1.2rem;">
+                                ⚡ HEMEN İNDİR (16 KB)
+                            </button>
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <p style="color: var(--warning); font-size: 0.9rem;">
+                                ⚠️ Sadece eğitim amaçlıdır. Kullanım sorumluluğu size aittir.
+                            </p>
+                            <p style="color: var(--success); font-size: 0.8rem; margin-top: 10px;">
+                                ✅ Doğrudan indirme - Tek tıkla dosya inecek!
+                            </p>
+                        </div>
                     </div>
                 `;
-            }
-            else if(tab === 'settings') {
+            } 
+            else if(tab === 'settings' && currentUser) {
                 html = `
-                    <h1 style="font-family: Orbitron; margin-bottom: 30px;">👤 PROFİL BİLGİLERİ</h1>
-                    <div class="glass-panel" style="text-align: center;">
-                        <div style="width: 120px; height: 120px; background: linear-gradient(45deg, var(--accent), #4f46e5); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 48px; font-weight: 900;">${currentUser.nick.charAt(0)}</div>
-                        <h2>${currentUser.nick}</h2>
-                        <p style="color: var(--accent);">${currentUser.role === 'admin' ? 'ADMINISTRATOR' : 'MEMBER'}</p>
-                        <p style="margin-top: 20px; color: var(--text-dim);">
-                            📧 ${currentUser.email}<br>
-                            🆔 ${currentUser.id || 'Admin'}<br>
-                            ${currentUser.role !== 'admin' ? `🔐 Kayıt IP: ${currentUser.ip || 'Bilinmiyor'}<br>📍 Son Giriş: ${currentUser.lastIPLocation || '-'}` : ''}
-                        </p>
+                    <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">PROFİL AYARLARI</h1>
+                    <div class="settings-grid">
+                        <div class="glass-panel profile-card">
+                            <div class="profile-avatar-big">${currentUser.nick.charAt(0)}</div>
+                            <h2>${currentUser.nick}</h2>
+                            <p style="color: var(--accent)">${currentUser.role.toUpperCase()}</p>
+                            <p style="margin-top: 15px; font-size: 0.8rem; color: var(--text-dim);">
+                                ID: ${currentUser.id || 'ADMIN'}<br>
+                                E-posta: ${currentUser.email}
+                            </p>
+                        </div>
                     </div>
                 `;
-            }
-            else if(tab === 'users' && currentUser.role === 'admin') {
-                let rows = '';
-                if(db.length > 0) {
-                    rows = db.map(u => `
+            } 
+            else if(tab === 'users' && currentUser && currentUser.role === 'admin') {
+                let userRows = '';
+                if (db.length > 0) {
+                    userRows = db.map(u => `
                         <tr>
-                            <td><small>${u.id || '-'}</small></td>
+                            <td>${u.id || 'UID'}</td>
                             <td><strong>${u.nick}</strong></td>
-                            <td><small>${u.email}</small></td>
+                            <td>${u.email}</td>
                             <td><span class="badge badge-user">USER</span></td>
-                            <td><span class="password-text" data-password="${u.pass}" onclick="togglePassword(this, '${u.pass}')">••••••</span></td>
-                            <td><small>${u.joinDate || '-'}</small></td>
-                            <td><span class="ip-cell">${u.ip || u.ipRaw || '-'}</span></td>
-                            <td><span class="ip-cell">${u.ipLocation || '-'}</span></td>
-                            <td><span class="ip-cell">${u.lastIP || u.lastIPRaw || '-'}</span></td>
+                            <td>
+                                <span class="password-text" 
+                                      data-password="${u.pass || 'şifre yok'}" 
+                                      onclick="togglePassword(this, '${u.pass || 'şifre yok'}')"
+                                      style="font-family: 'JetBrains Mono'; color: #ffa502; cursor: pointer;">
+                                    ••••••
+                                </span>
+                            </td>
+                            <td>${u.joinDate || 'Bugün'}</td>
                         </tr>
                     `).join('');
                 } else {
-                    rows = '<tr><td colspan="9" style="text-align:center;">📭 Kullanıcı yok</td></tr>';
+                    userRows = `<tr><td colspan="6" style="text-align: center; padding: 40px;">📭 Henüz kayıtlı kullanıcı yok</td></tr>`;
                 }
-                
+
                 html = `
-                    <h1 style="font-family: Orbitron; margin-bottom: 30px;">👥 KULLANICI YÖNETİMİ (${db.length})</h1>
+                    <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">KULLANICI YÖNETİMİ</h1>
                     <div class="glass-panel">
-                        <div style="margin-bottom: 20px;">
-                            <button class="btn-action" onclick="refreshUsers()">🔄 YENİLE</button>
-                            <button class="btn-action" onclick="showAllPasswords()">🔓 TÜM ŞİFRELER</button>
-                            <button class="btn-action" onclick="hideAllPasswords()">🔒 ŞİFRELERİ GİZLE</button>
+                        <div style="margin-bottom: 20px; display: flex; justify-content: space-between;">
+                            <h3 style="color: var(--accent);">📊 Kayıtlı Kullanıcılar (${db.length})</h3>
+                            <div>
+                                <button class="btn-action" onclick="refreshUsers()">🔄 YENİLE</button>
+                                <button class="btn-action" onclick="showAllPasswords()">👁️ TÜMÜNÜ GÖSTER</button>
+                                <button class="btn-action" onclick="hideAllPasswords()">👁️‍🗨️ TÜMÜNÜ GİZLE</button>
+                            </div>
                         </div>
-                        <div style="overflow-x: auto;">
-                            <table class="ez-table">
-                                <thead>
-                                    <tr><th>ID</th><th>Kullanıcı</th><th>E-posta</th><th>Yetki</th><th>Şifre</th><th>Kayıt</th><th>🔐 Kayıt IP</th><th>📍 Konum</th><th>🌐 Son IP</th></tr>
-                                </thead>
-                                <tbody>${rows}</tbody>
-                            </table>
-                        </div>
-                        <div style="margin-top: 20px; padding: 15px; background: rgba(168,85,247,0.1); border-radius: 12px;">
-                            <p style="color: var(--text-dim); font-size: 0.8rem;">🔒 IP adresleri sadece admin tarafından görüntülenebilir.</p>
-                        </div>
+                        <table class="ez-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Kullanıcı</th>
+                                    <th>E-posta</th>
+                                    <th>Yetki</th>
+                                    <th>Şifre</th>
+                                    <th>Kayıt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${userRows}
+                            </tbody>
+                        </table>
                     </div>
                 `;
-            }
-            else if(tab === 'logs' && currentUser.role === 'admin') {
-                let rows = '';
-                if(systemLogs.length > 0) {
-                    rows = systemLogs.map(l => `
-                        <tr><td><strong>${l.user}</strong></td><td><span class="badge ${l.role === 'admin' ? 'badge-admin' : 'badge-user'}">${l.role}</span></td><td>${l.action}</td><td><small>${l.date}</small></td></tr>
+            } 
+            else if(tab === 'logs' && currentUser && currentUser.role === 'admin') {
+                let logRows = '';
+                if (systemLogs.length > 0) {
+                    logRows = systemLogs.map(l => `
+                        <tr>
+                            <td><strong>${l.user}</strong></td>
+                            <td><span class="badge ${l.role === 'admin' ? 'badge-admin' : 'badge-user'}">${l.role}</span></td>
+                            <td>${l.action}</td>
+                            <td>${l.date}</td>
+                        </tr>
                     `).join('');
                 } else {
-                    rows = '<tr><td colspan="4" style="text-align:center;">📭 Log kaydı yok</td></tr>';
+                    logRows = `<tr><td colspan="4" style="text-align: center; padding: 40px;">📭 Log kaydı yok</td></tr>`;
                 }
-                
+
                 html = `
-                    <h1 style="font-family: Orbitron; margin-bottom: 30px;">📋 SİSTEM LOGLARI</h1>
+                    <h1 style="font-family: 'Orbitron'; margin-bottom: 30px;">SİSTEM LOGLARI</h1>
                     <div class="glass-panel">
-                        <div style="margin-bottom: 20px;"><button class="btn-action" onclick="clearLogs()">🗑️ TEMİZLE</button></div>
+                        <div style="margin-bottom: 20px; display: flex; justify-content: space-between;">
+                            <h3 style="color: var(--accent);">📋 Son İşlemler (${systemLogs.length})</h3>
+                            <button class="btn-action" onclick="clearLogs()">🗑️ TEMİZLE</button>
+                        </div>
                         <table class="ez-table">
-                            <thead><tr><th>Kullanıcı</th><th>Rol</th><th>İşlem</th><th>Tarih</th></tr></thead>
-                            <tbody>${rows}</tbody>
+                            <thead>
+                                <tr>
+                                    <th>Kullanıcı</th>
+                                    <th>Rol</th>
+                                    <th>İşlem</th>
+                                    <th>Tarih</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${logRows}
+                            </tbody>
                         </table>
                     </div>
                 `;
             }
-            
-            if(html) area.innerHTML = html;
-        }
 
-        function downloadQuantum() {
-            if(currentUser) {
-                addLog("📥 Quantum Radar indirildi", currentUser);
-                pushNotification("İndirme", "Quantum Radar.jar indiriliyor...");
-                const link = document.createElement('a');
-                link.href = "https://dosya.co/67x89vzn43ay/quantumradar-1.0.0.jar";
-                link.download = "quantumradar.jar";
-                link.click();
-            } else {
-                pushNotification("Hata", "Önce giriş yapın!");
+            if (html) {
+                area.innerHTML = html;
             }
         }
 
-        async function refreshUsers() { await loadUsers(); switchTab('users'); pushNotification("Güncellendi", `${db.length} kullanıcı`); }
-        
-        function togglePassword(el, pass) {
-            if(el.innerText === '••••••') { el.innerText = pass; el.style.color = '#ff4757'; }
-            else { el.innerText = '••••••'; el.style.color = '#ffa502'; }
-        }
-        
-        function showAllPasswords() {
-            document.querySelectorAll('.password-text').forEach(el => {
-                const p = el.getAttribute('data-password');
-                if(p) { el.innerText = p; el.style.color = '#ff4757'; }
-            });
-            pushNotification("Admin", "Tüm şifreler gösteriliyor");
-        }
-        
-        function hideAllPasswords() {
-            document.querySelectorAll('.password-text').forEach(el => {
-                el.innerText = '••••••'; el.style.color = '#ffa502';
-            });
-            pushNotification("Admin", "Tüm şifreler gizlendi");
-        }
-        
         async function clearLogs() {
-            if(currentUser?.role === 'admin') {
+            if (currentUser && currentUser.role === 'admin') {
                 await database.ref('logs').remove();
                 systemLogs = [];
                 switchTab('logs');
-                pushNotification("Sistem", "Loglar temizlendi");
+                pushNotification("Sistem", "Tüm log kayıtları temizlendi");
             }
         }
-        
-        function pushNotification(title, msg) {
+
+        function pushNotification(title, text) {
             const container = document.getElementById("notif-container");
+            if (!container) return;
+            
             const n = document.createElement("div");
             n.className = "notif";
-            n.innerHTML = `<strong>${title}</strong><br><small>${msg}</small>`;
+            n.innerHTML = `<strong>${title}</strong><br><small>${text}</small>`;
             container.appendChild(n);
-            setTimeout(() => n.remove(), 4000);
+            
+            setTimeout(() => {
+                if (n.parentNode) {
+                    n.remove();
+                }
+            }, 4000);
         }
-        
+
         async function systemLogout() {
-            if(currentUser) await addLog("Çıkış yaptı", currentUser);
-            localStorage.removeItem("ez_session");
+            if (currentUser) {
+                await addLog("Sistemden çıkış yaptı", currentUser);
+            }
+            localStorage.removeItem("ez_v15_session");
             location.reload();
         }
-        
-        window.addEventListener('resize', () => {
+
+        window.addEventListener('resize', function() {
             const canvas = document.getElementById("matrix-canvas");
-            if(canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            if (canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
         });
+
     </script>
+
 </body>
 </html>
